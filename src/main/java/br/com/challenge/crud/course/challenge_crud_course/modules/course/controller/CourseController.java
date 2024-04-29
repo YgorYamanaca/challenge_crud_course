@@ -1,11 +1,15 @@
 package br.com.challenge.crud.course.challenge_crud_course.modules.course.controller;
 
+import java.util.UUID;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -16,6 +20,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import br.com.challenge.crud.course.challenge_crud_course.modules.course.dto.CourseNameAndCategoryDTO;
 import br.com.challenge.crud.course.challenge_crud_course.modules.course.useCase.CreateCourseUseCase;
 import br.com.challenge.crud.course.challenge_crud_course.modules.course.useCase.FindCourseUseCase;
+import br.com.challenge.crud.course.challenge_crud_course.modules.course.useCase.UpdateCourseUseCase;
 import jakarta.validation.Valid;
 
 
@@ -28,6 +33,8 @@ public class CourseController {
     private CreateCourseUseCase createCourseUseCase;
     @Autowired
     private FindCourseUseCase findCourseUseCase;
+    @Autowired
+    private UpdateCourseUseCase updateCourseUseCase;
     
     @PostMapping(value = "/courses", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Object> createNewCourse(@Valid @RequestBody CourseNameAndCategoryDTO courseNameAndCategoryDTO) {
@@ -40,16 +47,32 @@ public class CourseController {
     }
 
     @GetMapping("/courses")
-    public ResponseEntity<Object> getMethodName(
+    public ResponseEntity<Object> getCourses(
         @RequestParam(required = false) String name,
         @RequestParam(required = false) String category) {
         var courseList = this.findCourseUseCase.execute(name, category);
 
-        if (courseList.size() > 1) {
+        if (courseList.size() >= 1) {
             return ResponseEntity.ok().body(courseList);
         }
 
         return ResponseEntity.notFound().build();
     }
     
+    @PutMapping("/courses/{id}")
+    public ResponseEntity<Object> updateCourse(
+        @PathVariable UUID id,
+        @RequestBody CourseNameAndCategoryDTO courseNameAndCategoryDTO
+    ) {
+        if (id == null)
+            return ResponseEntity.badRequest().body("Please enter the course ID");
+        if (courseNameAndCategoryDTO.getName() == null && courseNameAndCategoryDTO.getCategory() == null)
+            return ResponseEntity.badRequest().body("Name or category is missing to change course with id " + id);
+
+        try {
+            return ResponseEntity.ok().body(this.updateCourseUseCase.execute(id, courseNameAndCategoryDTO));
+        } catch (Exception error) {
+            return ResponseEntity.internalServerError().body(error);   
+        }
+    }
 }

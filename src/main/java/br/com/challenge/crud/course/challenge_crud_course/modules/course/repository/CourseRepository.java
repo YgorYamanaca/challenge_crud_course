@@ -12,4 +12,5 @@ public interface CourseRepository extends JpaRepository<CourseEntity, UUID> {
     Optional<List<CourseEntity>> findByName(String name);
     Optional<List<CourseEntity>> findByCategory(String category);
     Optional<List<CourseEntity>> findByNameAndCategory(String name, String category);
+    Optional<CourseEntity> findById(UUID id);
 }
