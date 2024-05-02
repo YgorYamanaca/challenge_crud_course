@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import br.com.challenge.crud.course.challenge_crud_course.modules.course.dto.CourseNameAndCategoryDTO;
 import br.com.challenge.crud.course.challenge_crud_course.modules.course.entity.CourseEntity;
+import br.com.challenge.crud.course.challenge_crud_course.modules.course.exception.CourseAlreadyExistsInDataBaseException;
 import br.com.challenge.crud.course.challenge_crud_course.modules.course.exception.CourseMissingInfoException;
 import br.com.challenge.crud.course.challenge_crud_course.modules.course.exception.CourseNotFoundException;
 import br.com.challenge.crud.course.challenge_crud_course.modules.course.repository.CourseRepository;
@@ -17,30 +18,36 @@ public class UpdateCourseUseCase {
     @Autowired
     CourseRepository courseRepository;
 
+    @Autowired
+    FindCourseUseCase findCourseUseCase;
+
     public CourseEntity execute(UUID courseId, CourseNameAndCategoryDTO courseNameAndCategoryDTO) {
         var courseName = courseNameAndCategoryDTO.getName();
         var courseCategory = courseNameAndCategoryDTO.getCategory();
         if (courseId == null)
             throw new CourseMissingInfoException("Course ID");
-        if (courseName == null || courseName.isBlank() && courseCategory == null || courseCategory.isBlank())
+        if (courseName == null && courseCategory == null)
             throw new CourseMissingInfoException("Course Name or Course Category");
-
-        if(courseRepository.findById(courseId).isEmpty()) {
-            throw new CourseNotFoundException();
-        }
-
-        CourseEntity courseToBeUpdated = courseRepository.findById(courseId).orElseThrow(() -> {
+        CourseEntity foundCourse = courseRepository.findById(courseId).orElseThrow(() -> {
             throw new CourseNotFoundException();
         });
 
-        if(!courseName.isBlank()) {
-            courseToBeUpdated.setName(courseName);
+        if(foundCourse.getName().equals(courseName) && foundCourse.getCategory().equals(courseCategory)) {
+            throw new CourseAlreadyExistsInDataBaseException();
         }
 
-        if(!courseCategory.isBlank()) {
-            courseToBeUpdated.setCategory(courseCategory);
+        if(courseName != null && !courseName.isBlank()) {
+            foundCourse.setName(courseName);
         }
 
-        return courseRepository.save(courseToBeUpdated);
+        if(courseCategory != null && !courseCategory.isBlank()) {
+            foundCourse.setCategory(courseCategory);
+        }
+
+        if(findCourseUseCase.execute(foundCourse.getName(), foundCourse.getCategory()).size() >= 1) {
+            throw new CourseAlreadyExistsInDataBaseException();
+        }
+
+        return courseRepository.save(foundCourse);
     }
 }

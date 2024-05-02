@@ -6,12 +6,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponents;
@@ -19,14 +19,13 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import br.com.challenge.crud.course.challenge_crud_course.modules.course.dto.CourseNameAndCategoryDTO;
 import br.com.challenge.crud.course.challenge_crud_course.modules.course.useCase.CreateCourseUseCase;
+import br.com.challenge.crud.course.challenge_crud_course.modules.course.useCase.DeleteCourseUseCase;
 import br.com.challenge.crud.course.challenge_crud_course.modules.course.useCase.FindCourseUseCase;
 import br.com.challenge.crud.course.challenge_crud_course.modules.course.useCase.UpdateCourseUseCase;
 import jakarta.validation.Valid;
 
 
-
 @RestController
-@RequestMapping("/")
 public class CourseController {
 
     @Autowired
@@ -35,8 +34,10 @@ public class CourseController {
     private FindCourseUseCase findCourseUseCase;
     @Autowired
     private UpdateCourseUseCase updateCourseUseCase;
-    
-    @PostMapping(value = "/courses", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Autowired
+    private DeleteCourseUseCase deleteCourseUseCase;
+
+    @PostMapping(value = "/course", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Object> createNewCourse(@Valid @RequestBody CourseNameAndCategoryDTO courseNameAndCategoryDTO) {
         try {
             UriComponents newCourseURI = UriComponentsBuilder.fromUriString("/courses").build();
@@ -46,7 +47,7 @@ public class CourseController {
         }
     }
 
-    @GetMapping("/courses")
+    @GetMapping("/course")
     public ResponseEntity<Object> getCourses(
         @RequestParam(required = false) String name,
         @RequestParam(required = false) String category) {
@@ -59,20 +60,32 @@ public class CourseController {
         return ResponseEntity.notFound().build();
     }
     
-    @PutMapping("/courses/{id}")
+    @PutMapping("/course/{id}")
     public ResponseEntity<Object> updateCourse(
         @PathVariable UUID id,
         @RequestBody CourseNameAndCategoryDTO courseNameAndCategoryDTO
     ) {
         if (id == null)
-            return ResponseEntity.badRequest().body("Please enter the course ID");
+            return ResponseEntity.badRequest().body("Please enter the course ID for update");
         if (courseNameAndCategoryDTO.getName() == null && courseNameAndCategoryDTO.getCategory() == null)
             return ResponseEntity.badRequest().body("Name or category is missing to change course with id " + id);
 
         try {
             return ResponseEntity.ok().body(this.updateCourseUseCase.execute(id, courseNameAndCategoryDTO));
         } catch (Exception error) {
-            return ResponseEntity.internalServerError().body(error);   
+            return ResponseEntity.internalServerError().body(error.getMessage());   
         }
+    }
+
+    @DeleteMapping("/course/{id}")
+    public ResponseEntity<Object> deleteCourse(@PathVariable UUID id) {
+        if (id == null)
+            return ResponseEntity.badRequest().body("Please enter the course ID for delete");
+        
+            try {
+                return ResponseEntity.ok().body(this.deleteCourseUseCase.execute(id));
+            } catch (Exception error) {
+                return ResponseEntity.internalServerError().body(error.getMessage()); 
+            }
     }
 }
