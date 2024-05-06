@@ -11,6 +11,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import br.com.challenge.crud.course.challenge_crud_course.modules.course.dto.CourseErrorMessageDTO;
 import br.com.challenge.crud.course.challenge_crud_course.modules.course.model.Status;
@@ -25,7 +26,7 @@ public class CourseExceptionHandler {
     }
     
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<List<CourseErrorMessageDTO>> handleMetthodArgumentNotValidException(MethodArgumentNotValidException error) {
+    public ResponseEntity<List<CourseErrorMessageDTO>> handleMethodArgumentNotValidException(MethodArgumentNotValidException error) {
         List<CourseErrorMessageDTO> errorMessageDTO = new ArrayList<>();
         error.getBindingResult().getFieldErrors().forEach(err -> {
             String errorMessage = messageSource.getMessage(err, LocaleContextHolder.getLocale());
@@ -38,6 +39,13 @@ public class CourseExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<String> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
+        String enumValues = Arrays.toString(Status.values());
+        String message = "Status needs to be " + enumValues;
+        return ResponseEntity.badRequest().body(message);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<String> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException ex) {
         String enumValues = Arrays.toString(Status.values());
         String message = "Status needs to be " + enumValues;
         return ResponseEntity.badRequest().body(message);

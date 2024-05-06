@@ -8,6 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -18,6 +19,8 @@ import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import br.com.challenge.crud.course.challenge_crud_course.modules.course.dto.CourseNameAndCategoryDTO;
+import br.com.challenge.crud.course.challenge_crud_course.modules.course.model.Status;
+import br.com.challenge.crud.course.challenge_crud_course.modules.course.useCase.ActiveCourseUseCase;
 import br.com.challenge.crud.course.challenge_crud_course.modules.course.useCase.CreateCourseUseCase;
 import br.com.challenge.crud.course.challenge_crud_course.modules.course.useCase.DeleteCourseUseCase;
 import br.com.challenge.crud.course.challenge_crud_course.modules.course.useCase.FindCourseUseCase;
@@ -36,6 +39,8 @@ public class CourseController {
     private UpdateCourseUseCase updateCourseUseCase;
     @Autowired
     private DeleteCourseUseCase deleteCourseUseCase;
+    @Autowired
+    private ActiveCourseUseCase activeCourseUseCase;
 
     @PostMapping(value = "/course", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Object> createNewCourse(@Valid @RequestBody CourseNameAndCategoryDTO courseNameAndCategoryDTO) {
@@ -87,5 +92,19 @@ public class CourseController {
             } catch (Exception error) {
                 return ResponseEntity.internalServerError().body(error.getMessage()); 
             }
+    }
+
+    @PatchMapping("/course/{id}/{status}")
+    public ResponseEntity<Object> toggleCourseStatus(@PathVariable UUID id, @PathVariable Status status) {
+        if(id == null) return ResponseEntity.badRequest().body("Please enter the course ID for update");
+        if (status == null)
+            return ResponseEntity.badRequest().body("Please enter ACTIVE or DESACTIVE to change course status");
+
+        try {
+            return ResponseEntity.ok().body(this.activeCourseUseCase.execute(id, status));
+        } catch (Exception error) {
+            return ResponseEntity.internalServerError().body(error.getMessage());
+        }
+
     }
 }
